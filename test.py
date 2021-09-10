@@ -1,18 +1,17 @@
 import cv2
 import tensorflow as tf
 import os
+import numpy as np
+import pickle
 
 Categories = ["Good", "Bad"]
 
-def read_file(filepath):
-    img_size = 50
-    img_array = cv2.imread(filepath, cv2.IMREAD_GRAYSCALE)
-    new_array = cv2.resize(img_array, (img_size, img_size))
-    return new_array.reshape(-1, img_size, img_size, 1)
+main_folder = "E:\Internship\CelebAMask-HQ\Training"
+test_destination = "E:\Internship\CelebAMask-HQ\Training\Test"
 
-# Swap this with your model url
-model = tf.keras.models.load_model('E:\Internship\CelebAMask-HQ\Training')
+test_dataset = pickle.load(open("test.pickle", "rb"))
 
-# Swap this with your testing picture url
-prediction = model.predict([read_file('E:\Internship\CelebAMask-HQ\Training\Testing\sample1.jpg')])
-print( Categories[int(prediction[0][0])])
+model = tf.keras.models.load_model(main_folder)
+
+result = model.evaluate(test_dataset)
+print(dict(zip(model.metrics_names, result)))
