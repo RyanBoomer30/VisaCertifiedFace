@@ -14,54 +14,43 @@ poses = []
 anno = []
 good = dict()
 bad = dict()
+goodTest = dict()
+badTest = dict()
 
 # File
 main_folder = "E:\Internship\CelebAMask-HQ\Training"
 image_folder = "E:\Internship\CelebAMask-HQ\CelebA-HQ-img"
-test_destination = "E:\Internship\CelebAMask-HQ\Training\Test"
+goodTest_destination = "E:\Internship\CelebAMask-HQ\Training\GoodTest"
+badTest_destination = "E:\Internship\CelebAMask-HQ\Training\BadTest"
 good_destination = 'E:\Internship\CelebAMask-HQ\Training\Good'
 bad_destination = 'E:\Internship\CelebAMask-HQ\Training\Bad'
-
-
-# Create a test file
-print("Creating Test Folder")
-for i in range(6001):
-    dest = shutil.move('{}\{}.jpg'.format(image_folder,i), test_destination) 
 
 with open('CelebAMask-HQ-pose-anno.txt') as p:
     for line in p:
         data = line.strip().split('.jpg ', 1)
         try:
-            check = float(data[0])
-            if (check>6000):
-                yaw, pitch, roll = (item.strip() for item in data[1].split(' ', 2))
-                yaw = float(yaw)
-                pitch = float(pitch)
-                roll = float(roll)
-                if yaw > -10 and yaw < 10 and pitch > -20 and pitch < 5 and roll > -5 and roll < 5:
-                    good[data[0]] = {"data": [yaw, pitch, roll, -1], "status": "1"}
-                else:
-                    bad[data[0]] = {"data": [yaw, pitch, roll, -1], "status": "0"}
+            yaw, pitch, roll = (item.strip() for item in data[1].split(' ', 2))
+            yaw = float(yaw)
+            pitch = float(pitch)
+            roll = float(roll)
+            if yaw > -10 and yaw < 10 and pitch > -20 and pitch < 5 and roll > -5 and roll < 5:
+                good[data[0]] = {"data": [yaw, pitch, roll, -1], "status": "1"}
+            else:
+                bad[data[0]] = {"data": [yaw, pitch, roll, -1], "status": "0"}
         except IndexError:
-            continue
-        except ValueError:
             continue
 
 with open('CelebAMask-HQ-attribute-anno.txt') as p:
     for line in p:
         data = line.strip().split('.jpg  ', 1)
         try:
-            check = float(data[0])
-            if (check>6000):
-                Five_Clock_Shadow, Arched_Eyebrows, Attractive, Bags_Under_Eyes, Bald, Bangs, Big_Lips, Big_Nose, Black_Hair, Blond_Hair, Blurry, Brown_Hair, Bushy_Eyebrows, Chubby, Double_Chin, Eyeglasses, Goatee, Gray_Hair, Heavy_Makeup, High_Cheekbones, Male, Mouth_Slightly_Open, Mustache, Narrow_Eyes, No_Beard, Oval_Face, Pale_Skin, Pointy_Nose, Receding_Hairline, Rosy_Cheeks, Sideburns, Smiling, Straight_Hair, Wavy_Hair, Wearing_Earrings, Wearing_Hat, Wearing_Lipstick, Wearing_Necklace, Wearing_Necktie, Young = (item.strip() for item in data[1].split(' ', 39))
-                if int(Eyeglasses) == 1 and data[0] in good:
-                    bad[data[0]] = good[data[0]]
-                    bad[data[0]]["status"] = "0"
-                    bad[data[0]]["data"][-1] = 1
-                    del (good[data[0]])
+            Five_Clock_Shadow, Arched_Eyebrows, Attractive, Bags_Under_Eyes, Bald, Bangs, Big_Lips, Big_Nose, Black_Hair, Blond_Hair, Blurry, Brown_Hair, Bushy_Eyebrows, Chubby, Double_Chin, Eyeglasses, Goatee, Gray_Hair, Heavy_Makeup, High_Cheekbones, Male, Mouth_Slightly_Open, Mustache, Narrow_Eyes, No_Beard, Oval_Face, Pale_Skin, Pointy_Nose, Receding_Hairline, Rosy_Cheeks, Sideburns, Smiling, Straight_Hair, Wavy_Hair, Wearing_Earrings, Wearing_Hat, Wearing_Lipstick, Wearing_Necklace, Wearing_Necktie, Young = (item.strip() for item in data[1].split(' ', 39))
+            if int(Eyeglasses) == 1 and data[0] in good:
+                bad[data[0]] = good[data[0]]
+                bad[data[0]]["status"] = "0"
+                bad[data[0]]["data"][-1] = 1
+                del (good[data[0]])
         except IndexError:
-            continue
-        except ValueError:
             continue
 
 # Change this into your good file url
@@ -72,19 +61,37 @@ for i in good.keys():
 # Change this into your bad file url
 print("Creating Bad Folder")
 for i in bad.keys():
-    dest = shutil.move('{}\{}.jpg'.format(image_folder,i), bad_destination) 
+    dest = shutil.move('{}\{}.jpg'.format(image_folder,i), bad_destination)
+
+# Create good test file
+count = 0
+for i in os.listdir(good_destination):
+    if count < 3000:
+        dest = shutil.move('{}\{}'.format(good_destination,i), goodTest_destination)
+        count+=1
+    else:
+        break
+
+# Create bad test file
+count = 0
+for i in os.listdir(bad_destination):
+    if count < 3000:
+        dest = shutil.move('{}\{}'.format(bad_destination,i), badTest_destination)
+        count+=1
+    else:
+        break
 
 # Prepare data
 print("Preparing Data")
-Datadir = main_folder
 Categories = ['Good', 'Bad']
 
 Img_size = 50
 
 training_data = []
+testing_data = []
 
 for category in Categories:
-    path = os.path.join(Datadir, category)
+    path = os.path.join(main_folder, category)
     class_num = Categories.index(category)
     for img in os.listdir(path):
         try:
@@ -94,8 +101,23 @@ for category in Categories:
         except Exception as e:
             pass
 
+for category in Categories:
+    if category == 'Good':
+        path = goodTest_destination
+    elif category == 'Bad':
+        path = badTest_destination
+    class_num = Categories.index(category)
+    for img in os.listdir(path):
+        try:
+            img_array = cv2.imread(os.path.join(path,img), cv2.IMREAD_GRAYSCALE)
+            new_array = cv2.resize(img_array, (Img_size, Img_size))
+            testing_data.append([new_array, class_num])
+        except Exception as e:
+            pass
+
 random.shuffle(training_data)
 
+print("Saving training")
 x = []
 y = []
 
@@ -112,16 +134,19 @@ pickle_out = open("y.pickle", "wb")
 pickle.dump(y, pickle_out)
 pickle_out.close()
 
-test_dataset = []
+print("Saving testing")
+x_test = []
+y_test = []
 
-for img in os.listdir(test_destination):
-    destination = test_destination + "/" + img
-    img_array = cv2.imread(destination, cv2.IMREAD_GRAYSCALE)
-    new_array = cv2.resize(img_array, (Img_size, Img_size))
-    test_dataset.append(new_array)
+for features, label in testing_data:
+    x_test.append(features)
+    y_test.append(label)
 
-test_dataset = np.array(test_dataset).reshape(-1, Img_size, Img_size, 1)
+x_test = np.array(x_test).reshape(-1, Img_size, Img_size, 1)
+pickle_out = open("x_test.pickle", "wb")
+pickle.dump(x_test, pickle_out)
+pickle_out.close()
 
-pickle_out = open("test.pickle", "wb")
-pickle.dump(test_dataset, pickle_out)
+pickle_out = open("y_test.pickle", "wb")
+pickle.dump(y_test, pickle_out)
 pickle_out.close()
