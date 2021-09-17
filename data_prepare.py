@@ -1,12 +1,11 @@
 # Import
+from ntpath import join
+from sys import path
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 import shutil
 import os
-import pathlib
-import cv2
-import random
 import pickle
 
 # File split
@@ -17,15 +16,34 @@ bad = dict()
 goodTest = dict()
 badTest = dict()
 
-# File
-main_folder = "E:\Internship\CelebAMask-HQ\Training"
-image_folder = "E:\Internship\CelebAMask-HQ\CelebA-HQ-img"
-goodTest_destination = "E:\Internship\CelebAMask-HQ\Training\GoodTest"
-badTest_destination = "E:\Internship\CelebAMask-HQ\Training\BadTest"
-good_destination = 'E:\Internship\CelebAMask-HQ\Training\Good'
-bad_destination = 'E:\Internship\CelebAMask-HQ\Training\Bad'
+# Source data, in any case do not modify its content.
+# You can also give this value in python argument.
+source_image_folder = "CelebAMask-HQ"
 
-with open('CelebAMask-HQ-pose-anno.txt') as p:
+# This folder contains a copy of data from source_image_folder defined just above,
+# but in a structure permitting to train and test easily.
+# All good and bad folders will be created inside this folder. 
+# We can safely delete this folder if we want to run again the script,
+# by example when we change the criteria to classify Bad and Good data.
+processed_image_folder = "Data"
+
+# You need to use os.path.join function in order to concatenate File or Folder PATH, 
+# because this latter is OS dependent. They are not the same in Windows and Linux.
+goodTest_destination = os.path.join(processed_image_folder, "Testing", "Good")
+badTest_destination = os.path.join(processed_image_folder, "Testing", "Bad")
+good_destination = os.path.join(processed_image_folder, "Training", "Good")
+bad_destination = os.path.join(processed_image_folder, "Training", "Bad")
+
+# Prepare the directory to store Train/Test, Good/Bad data.
+# If the folder already exist, the function will throw exception, so that you will
+# not be able to accidently run this script twice. If you really want to run it 
+# again, you have to delete the whole processed_image_folder
+os.makedirs(goodTest_destination)
+os.makedirs(badTest_destination)
+os.makedirs(good_destination)
+os.makedirs(bad_destination)
+
+with open(os.path.join(source_image_folder, "CelebAMask-HQ-pose-anno.txt")) as p:
     for line in p:
         data = line.strip().split('.jpg ', 1)
         try:
@@ -40,7 +58,7 @@ with open('CelebAMask-HQ-pose-anno.txt') as p:
         except IndexError:
             continue
 
-with open('CelebAMask-HQ-attribute-anno.txt') as p:
+with open(os.path.join(source_image_folder, "CelebAMask-HQ-attribute-anno.txt")) as p:
     for line in p:
         data = line.strip().split('.jpg  ', 1)
         try:
@@ -53,21 +71,20 @@ with open('CelebAMask-HQ-attribute-anno.txt') as p:
         except IndexError:
             continue
 
-# Change this into your good file url
-print("Creating Good Folder")
 for i in good.keys():
-    dest = shutil.move('{}\{}.jpg'.format(image_folder,i), good_destination) 
+    dest = shutil.copy(os.path.join(source_image_folder, "CelebA-HQ-img", '{}.jpg'.format(i)), good_destination)
+    print("File copied: ", dest)
 
-# Change this into your bad file url
-print("Creating Bad Folder")
 for i in bad.keys():
-    dest = shutil.move('{}\{}.jpg'.format(image_folder,i), bad_destination)
+    dest = shutil.copy(os.path.join(source_image_folder, "CelebA-HQ-img", '{}.jpg'.format(i)), bad_destination)
+    print("File copied: ", dest)
 
 # Create good test file
 count = 0
 for i in os.listdir(good_destination):
     if count < 3000:
-        dest = shutil.move('{}\{}'.format(good_destination,i), goodTest_destination)
+        dest = shutil.move(os.path.join(good_destination,i), goodTest_destination)
+        print("File moved to Test folder", dest)
         count+=1
     else:
         break
@@ -76,77 +93,8 @@ for i in os.listdir(good_destination):
 count = 0
 for i in os.listdir(bad_destination):
     if count < 3000:
-        dest = shutil.move('{}\{}'.format(bad_destination,i), badTest_destination)
+        dest = shutil.move(os.path.join(bad_destination,i), badTest_destination)
+        print("File moved to Test folder", dest)
         count+=1
     else:
         break
-
-# Prepare data
-print("Preparing Data")
-Categories = ['Good', 'Bad']
-
-Img_size = 50
-
-training_data = []
-testing_data = []
-
-for category in Categories:
-    path = os.path.join(main_folder, category)
-    class_num = Categories.index(category)
-    for img in os.listdir(path):
-        try:
-            img_array = cv2.imread(os.path.join(path,img), cv2.IMREAD_GRAYSCALE)
-            new_array = cv2.resize(img_array, (Img_size, Img_size))
-            training_data.append([new_array, class_num])
-        except Exception as e:
-            pass
-
-for category in Categories:
-    if category == 'Good':
-        path = goodTest_destination
-    elif category == 'Bad':
-        path = badTest_destination
-    class_num = Categories.index(category)
-    for img in os.listdir(path):
-        try:
-            img_array = cv2.imread(os.path.join(path,img), cv2.IMREAD_GRAYSCALE)
-            new_array = cv2.resize(img_array, (Img_size, Img_size))
-            testing_data.append([new_array, class_num])
-        except Exception as e:
-            pass
-
-random.shuffle(training_data)
-
-print("Saving training")
-x = []
-y = []
-
-for features, label in training_data:
-    x.append(features)
-    y.append(label)
-
-x = np.array(x).reshape(-1, Img_size, Img_size, 1)
-pickle_out = open("x.pickle", "wb")
-pickle.dump(x, pickle_out)
-pickle_out.close()
-
-pickle_out = open("y.pickle", "wb")
-pickle.dump(y, pickle_out)
-pickle_out.close()
-
-print("Saving testing")
-x_test = []
-y_test = []
-
-for features, label in testing_data:
-    x_test.append(features)
-    y_test.append(label)
-
-x_test = np.array(x_test).reshape(-1, Img_size, Img_size, 1)
-pickle_out = open("x_test.pickle", "wb")
-pickle.dump(x_test, pickle_out)
-pickle_out.close()
-
-pickle_out = open("y_test.pickle", "wb")
-pickle.dump(y_test, pickle_out)
-pickle_out.close()
