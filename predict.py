@@ -34,9 +34,31 @@ testing_data = []
 # Resize file
 def prepare(filepath):
     img_array = cv2.imread(filepath, cv2.IMREAD_GRAYSCALE)
+
+    cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
+    face = cascade.detectMultiScale(img_array, 1.3, 5)
+
     height, width = img_array.shape
-    crop_img = img_array[0:width, 0:width]
-    new_array = cv2.resize(crop_img, (Img_size, Img_size))
+    if len(face) == 0:
+        print("No face at", filepath)
+        new_array = cv2.resize(img_array, (Img_size, Img_size))
+    else:
+        x, y, w, h = face[0]
+        x = int(x)
+        y = int(y)
+        w = int(w)
+        h = int(h)
+
+        start_y = int(y-(w/7))
+        end_y = int(y+h+(w/7))
+        start_x = int(x-(w/7))
+        end_x = int(x+w+(w/7))
+        
+        crop_img = img_array[start_y:end_y, start_x:end_x]
+
+        new_array = cv2.resize(crop_img, (Img_size, Img_size))
+        # cv2.imshow("picture", new_array)
+        # cv2.waitKey(0)
     return np.array(new_array).reshape(-1, Img_size, Img_size, 1)
 
 # Load model
