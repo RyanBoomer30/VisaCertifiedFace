@@ -49,10 +49,10 @@ def prepare(filepath):
         w = int(w)
         h = int(h)
 
-        start_y = int(y-(w/7))
-        end_y = int(y+h+(w/7))
-        start_x = int(x-(w/7))
-        end_x = int(x+w+(w/7))
+        start_y = int(y-(w/7)) if int(y-(w/7)) > 0 else 0
+        end_y = int(y+h+(w/7)) if int(y+h+(w/7)) < height else h
+        start_x = int(x-(w/7)) if int(x-(w/7)) > 0 else 0
+        end_x = int(x+w+(w/7)) if int(x+w+(w/7)) < width else w
         
         crop_img = img_array[start_y:end_y, start_x:end_x]
 
