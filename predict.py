@@ -3,7 +3,7 @@ import tensorflow as tf
 import os
 import numpy as np
 import shutil
-
+import uuid
 
 # This folder contains a copy of data from test_image_folder defined just above,
 # but in a structure permitting to train and test easily.
@@ -29,19 +29,22 @@ os.makedirs(goodResult_destination)
 os.makedirs(badResult_destination)
 
 Img_size = 50
-testing_data = []
 
-# Resize file
+cv2_base_dir = os.path.dirname(os.path.abspath(cv2.__file__))
+haar_model = os.path.join(cv2_base_dir, 'data/haarcascade_frontalface_default.xml')
+print("Haar model file: ", haar_model)
+
+# load file and crop the face
 def prepare(filepath):
     img_array = cv2.imread(filepath, cv2.IMREAD_GRAYSCALE)
 
-    cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
+    cascade = cv2.CascadeClassifier(haar_model)
     face = cascade.detectMultiScale(img_array, 1.3, 5)
 
     height, width = img_array.shape
     if len(face) == 0:
         print("No face at", filepath)
-        new_array = cv2.resize(img_array, (Img_size, Img_size))
+        return img_array
     else:
         x, y, w, h = face[0]
         x = int(x)
@@ -49,29 +52,41 @@ def prepare(filepath):
         w = int(w)
         h = int(h)
 
-        start_y = int(y-(w/7)) if int(y-(w/7)) > 0 else 0
-        end_y = int(y+h+(w/7)) if int(y+h+(w/7)) < height else h
-        start_x = int(x-(w/7)) if int(x-(w/7)) > 0 else 0
-        end_x = int(x+w+(w/7)) if int(x+w+(w/7)) < width else w
+        ext_ratio = 5
+        start_y = int(y-(w/ext_ratio)) if int(y-(w/ext_ratio)) > 0 else 0
+        end_y = int(y+h+(w/ext_ratio)) if int(y+h+(w/ext_ratio)) < height else height
+        start_x = int(x-(w/ext_ratio)) if int(x-(w/ext_ratio)) > 0 else 0
+        end_x = int(x+w+(w/ext_ratio)) if int(x+w+(w/ext_ratio)) < width else width
         
         crop_img = img_array[start_y:end_y, start_x:end_x]
 
-        new_array = cv2.resize(crop_img, (Img_size, Img_size))
-        # cv2.imshow("picture", new_array)
-        # cv2.waitKey(0)
-    return np.array(new_array).reshape(-1, Img_size, Img_size, 1)
+        return crop_img
 
 # Load model
 model = tf.keras.models.load_model(processed_image_folder)
 
 # Generate predicted result into Good and Bad folders
 for i in os.listdir(test_image_folder):
-    test_image = os.path.join(test_image_folder, i)
-    test_array = prepare(test_image) / 255
-    predict = model.predict(test_array)
-    if predict <= 0.5:
-        dest = shutil.copy(test_image, goodResult_destination)
-        print("File copied: ", predict, dest)
+    test_file = os.path.join(test_image_folder, i)
+
+    test_image = prepare(test_file)
+
+    normalized_image = cv2.resize(test_image, (Img_size, Img_size))
+    # cv2.imshow("picture", normalized_image)
+    # cv2.waitKey(0)
+    normalized_image = np.array(normalized_image).reshape(-1, Img_size, Img_size, 1) / 255
+
+    score = model.predict(normalized_image)[0][0]
+    if score <= 0.5:
+        # dest = shutil.copy(test_file, goodResult_destination)
+        filename = os.path.join(goodResult_destination, str(score) + ".jpg")
+        print(filename)
+        res = cv2.imwrite(filename, test_image)
+        print("File copied: ", score, res)
+
     else:
-        dest = shutil.copy(test_image, badResult_destination)
-        print("File copied: ", predict, dest)
+        # dest = shutil.copy(test_file, badResult_destination)
+        filename = os.path.join(badResult_destination, str(score) + ".jpg")
+        print(filename)
+        res = cv2.imwrite(filename, test_image)
+        print("File copied: ", score, res)
