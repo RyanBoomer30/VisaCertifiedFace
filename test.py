@@ -56,7 +56,7 @@ val_fpr = list(min_fpr.values())
 min_fpr = key_fpr[val_fpr.index(min(min_fpr.values()))]
 
 best_ROC = thresholds[min_fpr]
-print(fpr, tpr, thresholds)
+print(best_ROC)
 
 # roc_display = RocCurveDisplay(fpr=fpr, tpr=tpr).plot()
 # plt.show()
