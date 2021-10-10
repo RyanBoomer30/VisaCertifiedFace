@@ -42,21 +42,11 @@ result = model.evaluate(x_test, y_test, batch_size=32)
 
 y_pred = model.predict(x_test)
 
-fpr, tpr, thresholds = roc_curve(y_test, y_pred)
+fpr, tpr, threshold = roc_curve(y_test, y_pred)
 
-max_tpr = [i for i, x in enumerate(tpr) if x == max(tpr)]
-
-min_fpr = dict()
-for i, x in enumerate(fpr):
-    if i in max_tpr:
-        min_fpr[i] = x
-
-key_fpr = list(min_fpr.keys())
-val_fpr = list(min_fpr.values())
-min_fpr = key_fpr[val_fpr.index(min(min_fpr.values()))]
-
-best_ROC = thresholds[min_fpr]
-print(best_ROC)
+fnr = 1 - tpr
+eer_threshold = threshold[np.nanargmin(np.absolute((fnr - fpr)))]
+print(eer_threshold)
 
 # roc_display = RocCurveDisplay(fpr=fpr, tpr=tpr).plot()
 # plt.show()
