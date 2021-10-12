@@ -51,7 +51,7 @@ with open(os.path.join(source_image_folder, "CelebAMask-HQ-pose-anno.txt")) as p
             yaw = float(yaw)
             pitch = float(pitch)
             roll = float(roll)
-            if yaw > -10 and yaw < 10 and pitch > -20 and pitch < 5 and roll > -5 and roll < 5:
+            if yaw > -15 and yaw < 15 and pitch > -20 and pitch < 5 and roll > -5 and roll < 5:
                 good[data[0]] = {"data": [yaw, pitch, roll, -1], "status": "1"}
             else:
                 bad[data[0]] = {"data": [yaw, pitch, roll, -1], "status": "0"}
@@ -63,7 +63,7 @@ with open(os.path.join(source_image_folder, "CelebAMask-HQ-attribute-anno.txt"))
         data = line.strip().split('.jpg  ', 1)
         try:
             Five_Clock_Shadow, Arched_Eyebrows, Attractive, Bags_Under_Eyes, Bald, Bangs, Big_Lips, Big_Nose, Black_Hair, Blond_Hair, Blurry, Brown_Hair, Bushy_Eyebrows, Chubby, Double_Chin, Eyeglasses, Goatee, Gray_Hair, Heavy_Makeup, High_Cheekbones, Male, Mouth_Slightly_Open, Mustache, Narrow_Eyes, No_Beard, Oval_Face, Pale_Skin, Pointy_Nose, Receding_Hairline, Rosy_Cheeks, Sideburns, Smiling, Straight_Hair, Wavy_Hair, Wearing_Earrings, Wearing_Hat, Wearing_Lipstick, Wearing_Necklace, Wearing_Necktie, Young = (item.strip() for item in data[1].split(' ', 39))
-            if int(Eyeglasses) == 1 and data[0] in good:
+            if (int(Eyeglasses) == 1 or int(Blurry) == 1 or int(Wearing_Hat) == 1) and data[0] in good:
                 bad[data[0]] = good[data[0]]
                 bad[data[0]]["status"] = "0"
                 bad[data[0]]["data"][-1] = 1

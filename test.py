@@ -38,18 +38,16 @@ y_test = np.array(y_test)
 
 model = tf.keras.models.load_model(processed_image_folder)
 
-# result = model.evaluate(x_test, y_test, batch_size=32)
+result = model.evaluate(x_test, y_test, batch_size=32)
 
 y_pred = model.predict(x_test)
 
 fpr, tpr, threshold = roc_curve(y_test, y_pred)
 
 fnr = 1 - tpr
-eer_index = np.nanargmin(np.absolute((fnr - fpr)))
-eer_threshold = threshold[eer_index]
-print("EER threshold: ", eer_threshold)
-print("FRN: ", fnr[eer_index])
-print("FPR: ", fpr[eer_index])
+eer_threshold = threshold[np.nanargmin(np.absolute((fnr - fpr)))]
+EER = fpr[np.nanargmin(np.absolute((fnr - fpr)))]
+print(EER)
 
 # roc_display = RocCurveDisplay(fpr=fpr, tpr=tpr).plot()
 # plt.show()

@@ -77,7 +77,7 @@ for i in os.listdir(test_image_folder):
     normalized_image = np.array(normalized_image).reshape(-1, Img_size, Img_size, 1) / 255
 
     score = model.predict(normalized_image)[0][0]
-    if score <= 0.83149046:
+    if score <= 0.4231498:
         # dest = shutil.copy(test_file, goodResult_destination)
         filename = os.path.join(goodResult_destination, str(score) + ".jpg")
         print(filename)
