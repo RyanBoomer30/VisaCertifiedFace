@@ -7,6 +7,8 @@ from matplotlib import pyplot as plt
 import shutil
 import os
 import pickle
+import mediapipe as mp
+import cv2
 
 # File split
 poses = []
@@ -79,6 +81,21 @@ for i in bad.keys():
     dest = shutil.copy(os.path.join(source_image_folder, "CelebA-HQ-img", '{}.jpg'.format(i)), bad_destination)
     print("File copied: ", dest)
 
+# Hand detection
+Img_size = 50
+mpHands = mp.solutions.hands
+hands = mpHands.Hands()
+for img in os.listdir(good_destination):
+    try:
+        img_array = cv2.imread(os.path.join(good_destination,img))
+        imgRGB = cv2.cvtColor(img_array, cv2.COLOR_BGR2RGB)
+        hand_check = hands.process(imgRGB)
+        if hand_check.multi_hand_landmarks:
+            print("Removing hands", img)
+            dest = shutil.move(os.path.join(good_destination,img), bad_destination)
+    except Exception as e:
+        pass
+
 # Create good test file
 count = 0
 for i in os.listdir(good_destination):
@@ -98,3 +115,4 @@ for i in os.listdir(bad_destination):
         count+=1
     else:
         break
+
